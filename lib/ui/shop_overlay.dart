@@ -32,9 +32,7 @@ class _ShopOverlayState extends State<ShopOverlay> {
     if (Inventory.instance.items.length >= widget.capacity) {
       await showDialog<void>(
         context: context,
-        builder: (ctx) => const AlertDialog(
-          content: Text('Hành trang đã đầy'),
-        ),
+        builder: (ctx) => const AlertDialog(content: Text('Hành trang đã đầy')),
       );
       return;
     }
@@ -43,8 +41,14 @@ class _ShopOverlayState extends State<ShopOverlay> {
       builder: (ctx) => AlertDialog(
         title: Text('Mua ${item.name}?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hủy')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Mua')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Mua'),
+          ),
         ],
       ),
     );
@@ -70,7 +74,9 @@ class _ShopOverlayState extends State<ShopOverlay> {
       ),
       itemCount: 20,
       itemBuilder: (context, index) {
-        final GameItem? item = index < items.length ? items[index] as GameItem : null;
+        final GameItem? item = index < items.length
+            ? items[index] as GameItem
+            : null;
         final tile = Container(
           decoration: BoxDecoration(
             color: Colors.white,
@@ -82,11 +88,18 @@ class _ShopOverlayState extends State<ShopOverlay> {
               : Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(item.icon, size: 24, color: Colors.black87),
-                    const SizedBox(height: 4),
+                    Icon(
+                      item.icon,
+                      size: 40,
+                      color: Colors.black87,
+                    ), // Increased icon size
+                    const SizedBox(height: 6),
                     Text(
                       item.name,
-                      style: const TextStyle(fontSize: 11, color: Colors.black87),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.black87,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
@@ -102,109 +115,135 @@ class _ShopOverlayState extends State<ShopOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    const spacing = 12.0;
-    return Align(
-      alignment: Alignment.center,
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Material(
-          color: Colors.white.withOpacity(0.98),
-          borderRadius: BorderRadius.circular(12),
-          elevation: 8,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: size.width * 0.92),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                const gridSpacing = 8.0;
-                const gridCols = 5;
-                const gridRows = 4;
+    // Book image size: 946x582, each page has 5x4 squares
+    // We'll overlay 10 columns x 4 rows (total 40 slots)
+    // Slot positions are manually calculated to fit the squares
+    final double bookWidth = 800;
+    final double bookHeight = 582;
+    final double slotSize = 39; // smaller slot size
+    final double slotSpacingX = 18; // smaller horizontal gap
+    final double slotSpacingY = 16.5; // smaller vertical gap
+    final double leftStartX = 155; // left page first slot x
+    final double rightStartX = 430; // right page first slot x
+    final double startY = 90; // move grid slots higher
 
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.storefront, size: 18),
-                          const SizedBox(width: 6),
-                          const Text('Gian hàng'),
-                          const Spacer(),
-                          IconButton(onPressed: widget.onClose, icon: const Icon(Icons.close)),
-                        ],
-                      ),
+    // Prepare all slot positions (left and right page)
+    List<Offset> slotPositions = [];
+    for (int row = 0; row < 5; row++) {
+      for (int col = 0; col < 4; col++) {
+        slotPositions.add(
+          Offset(
+            leftStartX + col * (slotSize + slotSpacingX),
+            startY + row * (slotSize + slotSpacingY),
+          ),
+        );
+      }
+    }
+    for (int row = 0; row < 5; row++) {
+      for (int col = 0; col < 4; col++) {
+        slotPositions.add(
+          Offset(
+            rightStartX + col * (slotSize + slotSpacingX),
+            startY + row * (slotSize + slotSpacingY),
+          ),
+        );
+      }
+    }
+
+    return Center(
+      child: SizedBox(
+        width: bookWidth + 700, // reduce total width to shift everything left
+        height: bookHeight,
+        child: Row(
+          children: [
+            SizedBox(
+              width: 450, // reduce Eleonore_Shop width to shift left
+              height: bookHeight,
+              child: Image.asset(
+                'images/Eleonore_Shop.png',
+                fit: BoxFit.contain,
+              ),
+            ),
+            SizedBox(
+              width: bookWidth,
+              height: bookHeight,
+              child: Stack(
+                children: [
+                  // Book background
+                  Positioned.fill(
+                    child: Image.asset(
+                      'images/Book_Shop.png',
+                      fit: BoxFit.contain,
                     ),
-                    const Divider(height: 1),
-                    Flexible(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Padding(
-                                    padding: EdgeInsets.only(left: 4.0, bottom: 6),
-                                    child: Text('Hàng của NPC'),
-                                  ),
-                                  LayoutBuilder(
-                                    builder: (context, c) {
-                                      final gridWidth = c.maxWidth;
-                                      final cellSize = ((gridWidth - (gridCols - 1) * gridSpacing) / gridCols)
-                                          .floorToDouble();
-                                      final gridHeight = (gridRows * cellSize + (gridRows - 1) * gridSpacing)
-                                          .floorToDouble();
-                                      return SizedBox(
-                                        height: gridHeight,
-                                        child: _grid(npcItems, clickable: true),
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: spacing),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Padding(
-                                  padding: EdgeInsets.only(left: 4.0, bottom: 6),
-                                  child: Text('Hành trang của bạn'),
-                                ),
-                                AnimatedBuilder(
-                                  animation: Inventory.instance,
-                                  builder: (context, _) {
-                                    return LayoutBuilder(
-                                      builder: (context, c) {
-                                        final gridWidth = c.maxWidth;
-                                        final cellSize = ((gridWidth - (gridCols - 1) * gridSpacing) / gridCols)
-                                            .floorToDouble();
-                                        final gridHeight = (gridRows * cellSize + (gridRows - 1) * gridSpacing)
-                                            .floorToDouble();
-                                        return SizedBox(
-                                          height: gridHeight,
-                                          child: _grid(Inventory.instance.items),
-                                        );
-                                      },
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                          ],
+                  ),
+                  // Close button (top right)
+                  Positioned(
+                    top: 12,
+                    right: 12,
+                    child: GestureDetector(
+                      onTap: widget.onClose,
+                      child: SizedBox(
+                        width: 36,
+                        height: 36,
+                        child: Image.asset(
+                          'images/X_Button.png',
+                          fit: BoxFit.contain,
                         ),
                       ),
                     ),
-                  ],
-                );
-              },
+                  ),
+                  // Overlay slots
+                  for (int i = 0; i < slotPositions.length; i++)
+                    Positioned(
+                      left: slotPositions[i].dx,
+                      top: slotPositions[i].dy,
+                      child: Builder(
+                        builder: (context) {
+                          final item = i < npcItems.length ? npcItems[i] : null;
+                          return GestureDetector(
+                            onTap: item != null ? () => _buy(item) : null,
+                            child: Container(
+                              width: slotSize,
+                              height: slotSize,
+                              decoration: BoxDecoration(
+                                color: Colors.transparent,
+                                border: Border.all(
+                                  color: Colors.brown.shade700,
+                                  width: 2,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: item == null
+                                  ? const SizedBox.shrink()
+                                  : Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          item.icon,
+                                          size: 22,
+                                          color: Colors.black87,
+                                        ),
+                                        const SizedBox(height: 1),
+                                        Text(
+                                          item.name,
+                                          style: const TextStyle(
+                                            fontSize: 8,
+                                            color: Colors.black87,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );

@@ -309,7 +309,7 @@ class MyGame extends FlameGame
             'Vào đảo undead',
             onSelected: () async {
               dialogManager.close();
-              await loadMap('dungeon.tmx', spawn: Vector2(2100, 1095));
+              await loadMap('dungeon.tmx', spawn: Vector2(1260, 650));
             },
           ),
           DialogueChoice('Tạm biệt', onSelected: dialogManager.close),
@@ -406,7 +406,7 @@ class MyGame extends FlameGame
     else if (mapFile == 'dungeon.tmx') {
       await world.add(
         Enemy(
-          patrolRect: ui.Rect.fromLTWH(1600, 755, 160, 120),
+          patrolRect: ui.Rect.fromLTWH(970, 465, 80, 60),
           speed: 30,
           triggerRadius: 48,
           enemyType: EnemyType.normal,
@@ -415,7 +415,7 @@ class MyGame extends FlameGame
 
       await world.add(
         Enemy(
-          patrolRect: ui.Rect.fromLTWH(1700, 575, 160, 120),
+          patrolRect: ui.Rect.fromLTWH(1035, 300, 80, 60),
           speed: 28,
           triggerRadius: 48,
           enemyType: EnemyType.strong,
@@ -424,7 +424,7 @@ class MyGame extends FlameGame
 
       await world.add(
         Enemy(
-          patrolRect: ui.Rect.fromLTWH(400, 450, 160, 120),
+          patrolRect: ui.Rect.fromLTWH(230, 530, 80, 60),
           speed: 32,
           triggerRadius: 48,
           enemyType: EnemyType.miniboss,
@@ -433,7 +433,7 @@ class MyGame extends FlameGame
 
       await world.add(
         Enemy(
-          patrolRect: ui.Rect.fromLTWH(825, 585, 160, 120),
+          patrolRect: ui.Rect.fromLTWH(265, 300, 80, 60),
           speed: 20,
           triggerRadius: 60,
           enemyType: EnemyType.boss,
@@ -441,7 +441,7 @@ class MyGame extends FlameGame
       );
       await world.add(
         Enemy(
-          patrolRect: ui.Rect.fromLTWH(450, 950, 160, 120),
+          patrolRect: ui.Rect.fromLTWH(500, 375, 80, 60),
           speed: 30,
           triggerRadius: 48,
           enemyType: EnemyType.normal,
@@ -450,7 +450,7 @@ class MyGame extends FlameGame
 
       await world.add(
         Enemy(
-          patrolRect: ui.Rect.fromLTWH(1250, 850, 160, 120),
+          patrolRect: ui.Rect.fromLTWH(745, 485, 80, 60),
           speed: 28,
           triggerRadius: 48,
           enemyType: EnemyType.strong,
@@ -518,7 +518,7 @@ class MyGame extends FlameGame
 
     if (result.outcome == 'lose') {
       heartsHud.refill();
-      player.position = Vector2(2100, 1095);
+      player.position = Vector2(1255, 655);
     }
 
     // continue nhạc nền khi thoát battle
@@ -542,13 +542,25 @@ class MyGame extends FlameGame
     await add(newWorld);
     world = newWorld;
 
-    map = await ft.TiledComponent.load(
-      mapFile,
-      Vector2.all(tileSize),
-      prefix: 'assets/maps/',
-      priority: 0,
-    );
-    await world.add(map);
+    // Set scale for dungeon.tmx
+    if (mapFile == 'dungeon.tmx') {
+      map = await ft.TiledComponent.load(
+        mapFile,
+        Vector2.all(tileSize),
+        prefix: 'assets/maps/',
+        priority: 0,
+      );
+      map.scale = Vector2.all(0.6);
+      await world.add(map);
+    } else {
+      map = await ft.TiledComponent.load(
+        mapFile,
+        Vector2.all(tileSize),
+        prefix: 'assets/maps/',
+        priority: 0,
+      );
+      await world.add(map);
+    }
 
     await _initMapObjects(mapFile);
 
