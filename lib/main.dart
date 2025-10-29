@@ -12,10 +12,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mygame/components/Menu/flashcard/business/Flashcard.dart';
 import 'package:mygame/components/Menu/flashcard/business/Deck.dart';
+import 'package:mygame/components/Menu/flashcard/screen/cardlevel/cardlevelscreen.dart';
 import 'package:mygame/components/Menu/pausemenu.dart';
 import 'package:provider/provider.dart';
 import 'ui/health.dart';
 import 'ui/experience.dart';
+import 'ui/gold_hud.dart';
 import 'components/tiledobject.dart';
 import 'components/collisionmap.dart';
 import 'components/enemy_wander.dart';
@@ -102,6 +104,9 @@ void main() async {
                 ),
               );
             },
+            'CardLevelScreen': (context, game) {
+              return Cardlevelscreen(game: game as MyGame);
+            },
             SettingsOverlay.id: (context, game) {
               return SettingsOverlay(audio: AudioManager.instance);
             },
@@ -129,9 +134,11 @@ class MyGame extends FlameGame
   bool _inBattle = false;
   Vector2? _savedJoystickPos;
 
+  @override
   late World world;
   late Health heartsHud;
   late ExperienceBar expHud;
+  late GoldHud goldHud;
   late ft.TiledComponent map;
   late Rect mapBounds;
   final PositionComponent hudRoot = PositionComponent(priority: 100000);
@@ -225,6 +232,9 @@ class MyGame extends FlameGame
     );
     await hudRoot.add(expHud);
 
+    goldHud = GoldHud(margin: const EdgeInsets.only(left: 8, top: 56));
+    await hudRoot.add(goldHud);
+
     dialogManager.onRequestCloseOverlay = () {
       if (overlays.isActive(DialogOverlay.id)) {
         overlays.remove(DialogOverlay.id);
@@ -268,6 +278,33 @@ class MyGame extends FlameGame
     if (mapFile == 'map.tmx') {
       final loader = TiledObjectLoader(map, world);
       await loader.loadLayer("house");
+
+      final wisemanNPC = Npc(
+        position: Vector2(52, 90),
+        manager: dialogManager,
+        interactLines: const ['Winter is comming!', 'Dont go to the north.'],
+        interactOrderMode: InteractOrderMode.alwaysFromStart,
+        interactPrompt: 'You cant fight with that body, train with me!',
+        interactChoices: [
+          DialogueChoice(
+            'Start Card Training',
+            onSelected: () {
+              overlays.add('CardLevelScreen');
+            },
+          ),
+          DialogueChoice('Not Right Now', onSelected: dialogManager.close),
+        ],
+        idleLines: const ['You know nothing, Jon Snow', 'Why Would A Girl See Blood And Collapse?'],
+        enableIdleChatter: true,
+        spriteAsset: 'chihiro.png',
+        srcPosition: Vector2(0, 0),
+        srcSize: Vector2(64, 64),
+        size: Vector2(40, 40),
+        avatarAsset: 'assets/images/Eleonore_avatar.png',
+        avatarDisplaySize: const Size(162, 162),
+        interactRadius: 28,
+        zPriority: 20,);
+      await world.add(wisemanNPC);
 
       final npc1 = Npc(
         position: Vector2(660, 112),
@@ -354,6 +391,9 @@ class MyGame extends FlameGame
         interactRadius: 28,
         zPriority: 20,);
       await world.add(shopNpc);
+
+
+
       await world.add(
         EnemyWander(
           patrolRect: ui.Rect.fromLTWH(700, 500, 160, 120),
@@ -505,8 +545,13 @@ class MyGame extends FlameGame
     hudRoot.add(heartsHud);
     heartsHud.setCurrent(remainHearts);
 
-    if (result.outcome == 'win' && result.xpGained > 0) {
-      expHud.addXp(result.xpGained);
+    if (result.outcome == 'win') {
+      if (result.xpGained > 0) { expHud.addXp(result.xpGained); }
+
+
+      // if (result.goldGained > 0) { goldHud.addGold(result.goldGained); }
+
+
     }
 
     if (joystick != null) {
@@ -664,3 +709,7 @@ class MyGame extends FlameGame
     }
   }
 }
+
+
+
+

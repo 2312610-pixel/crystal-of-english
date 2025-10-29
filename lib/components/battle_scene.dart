@@ -274,7 +274,10 @@ class BattleScene extends Component with HasGameReference<MyGame> {
     heroRoot = PositionComponent(
       size: heroDisplaySize,
       anchor: Anchor.bottomCenter,
-      position: Vector2(centerX - 70 * battleScale, baselineY + 50), // Move hero higher by 2px
+      position: Vector2(
+        centerX - 70 * battleScale,
+        baselineY + 50,
+      ), // Move hero higher by 2px
       priority: 10,
     );
 
@@ -301,10 +304,18 @@ class BattleScene extends Component with HasGameReference<MyGame> {
     Map<String, SpriteAnimation> enemyAnimations = {};
     try {
       // Load sprite images (see attachments for actual images)
-      final ui.Image eIdle = await game.images.load('${enemyFolder}idle.png'); // 4 frames, 64x64 each
-      final ui.Image eAttack = await game.images.load('${enemyFolder}attack.png'); // 6 frames, 64x64 each
-      final ui.Image eHurt = await game.images.load('${enemyFolder}hurt.png'); // 6 frames, 64x64 each
-      final ui.Image eDeath = await game.images.load('${enemyFolder}death.png'); // 8 frames, 64x64 each
+      final ui.Image eIdle = await game.images.load(
+        '${enemyFolder}idle.png',
+      ); // 4 frames, 64x64 each
+      final ui.Image eAttack = await game.images.load(
+        '${enemyFolder}attack.png',
+      ); // 6 frames, 64x64 each
+      final ui.Image eHurt = await game.images.load(
+        '${enemyFolder}hurt.png',
+      ); // 6 frames, 64x64 each
+      final ui.Image eDeath = await game.images.load(
+        '${enemyFolder}death.png',
+      ); // 8 frames, 64x64 each
 
       // Frame sizes based on provided images
       const frameWidth = 64.0;
@@ -317,10 +328,22 @@ class BattleScene extends Component with HasGameReference<MyGame> {
       final deathFrameCount = (eDeath.width / frameWidth).floor(); // 8
 
       // SpriteSheets
-      final idleSheet = SpriteSheet(image: eIdle, srcSize: Vector2(frameWidth, frameHeight));
-      final attackSheet = SpriteSheet(image: eAttack, srcSize: Vector2(frameWidth, frameHeight));
-      final hurtSheet = SpriteSheet(image: eHurt, srcSize: Vector2(frameWidth, frameHeight));
-      final deathSheet = SpriteSheet(image: eDeath, srcSize: Vector2(frameWidth, frameHeight));
+      final idleSheet = SpriteSheet(
+        image: eIdle,
+        srcSize: Vector2(frameWidth, frameHeight),
+      );
+      final attackSheet = SpriteSheet(
+        image: eAttack,
+        srcSize: Vector2(frameWidth, frameHeight),
+      );
+      final hurtSheet = SpriteSheet(
+        image: eHurt,
+        srcSize: Vector2(frameWidth, frameHeight),
+      );
+      final deathSheet = SpriteSheet(
+        image: eDeath,
+        srcSize: Vector2(frameWidth, frameHeight),
+      );
 
       // Animations (all use row 0)
       enemyAnimations['idle'] = idleSheet.createAnimation(
@@ -574,7 +597,6 @@ class BattleScene extends Component with HasGameReference<MyGame> {
     await Future.delayed(const Duration(milliseconds: 160));
     fx.removeFromParent();
   }
-
 }
 
 class TextButtonHud extends PositionComponent with TapCallbacks {

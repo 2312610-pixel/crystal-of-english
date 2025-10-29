@@ -33,38 +33,44 @@ class InventoryPanel extends StatelessWidget {
     // Use Stack to layer slots over the new backpack image (backPack.png)
     // 6x4 grid, 24 slots, matching the new image
     // Make slot boxes smaller and keep them aligned with the image grid
+    // Render inside an aspect-ratio box matching the backpack art so
+    // the grid can be positioned by percentages and scale together.
     return Center(
-      child: SizedBox(
-        width: 700,
-        height: 560,
-        child: Stack(
-          children: [
-            // Backpack background
-            Positioned.fill(
-              child: Image.asset('images/backPack.png', fit: BoxFit.contain),
-            ),
-            // Close button and title
-            Positioned(
-              top: 8,
-              left: 8,
-              right: 8,
-              child: Row(
-                children: [
-                  const Icon(Icons.inventory_2, size: 18, color: Colors.brown),
-                  const SizedBox(width: 6),
-                  const Text(
-                    'Hành trang',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: SizedBox(
+          width: 700, // base art width
+          height: 560, // base art height (aspect ~1.25)
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: Image.asset(
+                  'images/Back_Pack_Nogrid.png',
+                  fit: BoxFit.fill,
+                ),
+              ),
+              // Title + close (anchored to the art coordinates)
+              Positioned(
+                top: 8,
+                left: 8,
+                right: 8,
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.inventory_2,
+                      size: 18,
                       color: Colors.brown,
                     ),
-                  ),
-                  const Spacer(),
-                  // Close button (top right)
-                  Positioned(
-                    top: 12,
-                    right: 12,
-                    child: GestureDetector(
+                    const SizedBox(width: 6),
+                    const Text(
+                      'Hành trang',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.brown,
+                      ),
+                    ),
+                    const Spacer(),
+                    GestureDetector(
                       onTap: onClose,
                       child: SizedBox(
                         width: 36,
@@ -75,86 +81,164 @@ class InventoryPanel extends StatelessWidget {
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            // Slots grid overlay (manual grid for pixel-perfect fit, smaller slots)
-            Positioned(
-              top: 105,
-              left: 122,
-              child: SizedBox(
-                width: 650, // 6*60 + 5*8 spacing
-                height: 300, // 4*36 + 3*8 spacing
+              // Grid overlay computed from a percentage rect so it stays aligned
+              // if the art scales.
+              Positioned.fill(
                 child: AnimatedBuilder(
                   animation: Inventory.instance,
                   builder: (context, _) {
                     final items = Inventory.instance.items;
-                    List<Widget> slotWidgets = [];
-                    const slotSize = 64.0;
-                    const slotSpacing = 14.0;
-                    for (int row = 0; row < 4; row++) {
-                      for (int col = 0; col < 6; col++) {
-                        int index = row * 6 + col;
-                        final item = index < items.length ? items[index] : null;
-                        slotWidgets.add(
-                          Positioned(
-                            left: col * (slotSize + slotSpacing),
-                            top: row * (slotSize + slotSpacing),
-                            child: Container(
-                              width: slotSize,
-                              height: slotSize,
-                              decoration: BoxDecoration(
-                                color: Colors.transparent,
-                                border: Border.all(
-                                  color: Colors.brown.shade700,
-                                  width: 2,
-                                ),
-                                borderRadius: BorderRadius.circular(5),
-                              ),
-                              child: item == null
-                                  ? const SizedBox.shrink()
-                                  : Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          item.icon,
-                                          size: 22,
-                                          color: const Color.fromARGB(
-                                            255,
-                                            255,
-                                            255,
-                                            255,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 1),
-                                        Text(
-                                          item.name,
-                                          style: const TextStyle(
-                                            fontSize: 9,
-                                            color: Color.fromARGB(
-                                              255,
-                                              255,
-                                              255,
-                                              255,
-                                            ),
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
+                    const int rows = 4;
+                    final int cols = columns;
+                    // Define the grid rectangle as percentages of the art box.
+                    // Tweak these if the art grid area changes.
+                    const double gridLeftPct = 0.10; // move grid a bit lefter
+                    const double gridTopPct = 0.20;
+                    const double gridRightPct = 0.10; // balance right margin
+                    const double gridBottomPct = 0.22; // bottom margin
+                    const double spacingPx = 9.0; // 2px gap between slots
+
+                    return LayoutBuilder(
+                      builder: (context, constraints) {
+                        final double w = constraints.maxWidth;
+                        final double h = constraints.maxHeight;
+                        final double left = w * gridLeftPct;
+                        final double top = h * gridTopPct;
+                        final double right = w * gridRightPct;
+                        final double bottom = h * gridBottomPct;
+                        final double gridW = w - left - right;
+                        final double gridH = h - top - bottom;
+                        // account for spacing between cells
+                        final double cellWidth =
+                            (gridW - spacingPx * (cols - 1)) / cols;
+                        final double cellHeight =
+                            (gridH - spacingPx * (rows - 1)) / rows;
+                        final double cell = cellWidth < cellHeight
+                            ? cellWidth
+                            : cellHeight;
+                        final double totalW =
+                            cell * cols + spacingPx * (cols - 1);
+                        final double totalH =
+                            cell * rows + spacingPx * (rows - 1);
+                        final double startX = left + (gridW - totalW) / 2;
+                        final double startY = top + (gridH - totalH) / 2;
+
+                        final List<Widget> slotWidgets = [];
+                        const double inset =
+                            2.0; // shrink each slot by 2px total
+                        for (int r = 0; r < rows; r++) {
+                          for (int c = 0; c < cols; c++) {
+                            final int index = r * cols + c;
+                            final item = index < items.length
+                                ? items[index]
+                                : null;
+                            final double x =
+                                startX + c * (cell + spacingPx) + inset;
+                            final double y =
+                                startY + r * (cell + spacingPx) + inset;
+                            final double renderSize = (cell - 2.0).clamp(
+                              0,
+                              cell,
+                            );
+                            slotWidgets.add(
+                              Positioned(
+                                left: x,
+                                top: y + 10,
+                                child: Container(
+                                  width: renderSize - 2,
+                                  height: renderSize - 2,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1a1a2e),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.brown.shade300,
+                                        offset: const Offset(-1, -1),
+                                        blurRadius: 0,
+                                        spreadRadius: 0,
+                                      ),
+                                      BoxShadow(
+                                        color: Colors.brown.shade300,
+                                        offset: const Offset(-2, -2),
+                                        blurRadius: 0,
+                                        spreadRadius: 0,
+                                      ),
+                                      BoxShadow(
+                                        color: Colors.brown.shade900
+                                            .withOpacity(0.6),
+                                        offset: const Offset(1, 1),
+                                        blurRadius: 0,
+                                        spreadRadius: 0,
+                                      ),
+                                      BoxShadow(
+                                        color: Colors.brown.shade900
+                                            .withOpacity(0.6),
+                                        offset: const Offset(2, 2),
+                                        blurRadius: 0,
+                                        spreadRadius: 0,
+                                      ),
+                                    ],
+                                    border: Border.all(
+                                      color: Colors.brown.shade800,
+                                      width: 3,
                                     ),
-                            ),
-                          ),
-                        );
-                      }
-                    }
-                    return Stack(children: slotWidgets);
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  // Gold-like stroke similar to the art frame
+                                  foregroundDecoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: const Color(0xFFB88A54),
+                                      width: 4,
+                                    ),
+                                    borderRadius: BorderRadius.circular(5),
+                                  ),
+                                  child: item == null
+                                      ? const SizedBox.shrink()
+                                      : Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              item.icon,
+                                              size: renderSize * 0.5,
+                                              color: const Color.fromARGB(
+                                                255,
+                                                255,
+                                                255,
+                                                255,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 1),
+                                            Text(
+                                              item.name,
+                                              style: TextStyle(
+                                                fontSize: renderSize * 0.22,
+                                                color: const Color.fromARGB(
+                                                  255,
+                                                  255,
+                                                  255,
+                                                  255,
+                                                ),
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
+                                        ),
+                                ),
+                              ),
+                            );
+                          }
+                        }
+                        return Stack(children: slotWidgets);
+                      },
+                    );
                   },
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

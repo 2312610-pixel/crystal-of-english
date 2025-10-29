@@ -15,6 +15,10 @@ class ShopOverlay extends StatefulWidget {
 class _ShopOverlayState extends State<ShopOverlay> {
   late List<GameItem> npcItems;
 
+  // Adjustable positions for the foreground images
+  static const Offset kEleonoreOffset = Offset(80, 0);
+  static const Offset kBookOffset = Offset(-100, 0);
+
   @override
   void initState() {
     super.initState();
@@ -62,188 +66,192 @@ class _ShopOverlayState extends State<ShopOverlay> {
     }
   }
 
-  Widget _grid(List<dynamic> items, {bool clickable = false}) {
-    return GridView.builder(
-      physics: const NeverScrollableScrollPhysics(),
-      shrinkWrap: true,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 5,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
-        childAspectRatio: 1,
-      ),
-      itemCount: 20,
-      itemBuilder: (context, index) {
-        final GameItem? item = index < items.length
-            ? items[index] as GameItem
-            : null;
-        final tile = Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.black26),
-          ),
-          child: item == null
-              ? const SizedBox.shrink()
-              : Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      item.icon,
-                      size: 40,
-                      color: Colors.black87,
-                    ), // Increased icon size
-                    const SizedBox(height: 6),
-                    Text(
-                      item.name,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Colors.black87,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-        );
-        if (clickable && item != null) {
-          return InkWell(onTap: () => _buy(item), child: tile);
-        }
-        return tile;
-      },
+  // Build Eleonore character image (left side)
+  Widget _buildEleonoreImage(double height) {
+    return SizedBox(
+      width: 350,
+      height: height,
+      child: Image.asset('images/shop/Eleonore_Shop.png', fit: BoxFit.contain),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    // Book image size: 946x582, each page has 5x4 squares
-    // We'll overlay 10 columns x 4 rows (total 40 slots)
-    // Slot positions are manually calculated to fit the squares
-    final double bookWidth = 800;
-    final double bookHeight = 582;
-    final double slotSize = 39; // smaller slot size
-    final double slotSpacingX = 18; // smaller horizontal gap
-    final double slotSpacingY = 16.5; // smaller vertical gap
-    final double leftStartX = 155; // left page first slot x
-    final double rightStartX = 430; // right page first slot x
-    final double startY = 90; // move grid slots higher
+  // Build Book shop panel with slots (right side) using percent-based layout
+  Widget _buildBookPanel(
+    double baseWidth,
+    double baseHeight,
+    List<GameItem> items,
+  ) {
+    // The original art is 946x582; keep default size/aspect for Book_Shop_Nogrid.
+    const double artW = 946;
+    const double artH = 582;
+    const int rowsPerPage = 5;
+    const int colsPerPage = 4;
 
-    // Prepare all slot positions (left and right page)
-    List<Offset> slotPositions = [];
-    for (int row = 0; row < 5; row++) {
-      for (int col = 0; col < 4; col++) {
-        slotPositions.add(
-          Offset(
-            leftStartX + col * (slotSize + slotSpacingX),
-            startY + row * (slotSize + slotSpacingY),
-          ),
-        );
-      }
-    }
-    for (int row = 0; row < 5; row++) {
-      for (int col = 0; col < 4; col++) {
-        slotPositions.add(
-          Offset(
-            rightStartX + col * (slotSize + slotSpacingX),
-            startY + row * (slotSize + slotSpacingY),
-          ),
-        );
-      }
-    }
+    // Page rectangles (fractions of the full art). Tune if the art changes.
+    const Rect leftPage = Rect.fromLTWH(0.165, 0.155, 0.28, 0.68);
+    const Rect rightPage = Rect.fromLTWH(0.535, 0.155, 0.28, 0.68);
 
-    return Center(
-      child: SizedBox(
-        width: bookWidth + 700, // reduce total width to shift everything left
-        height: bookHeight,
-        child: Row(
-          children: [
-            SizedBox(
-              width: 450, // reduce Eleonore_Shop width to shift left
-              height: bookHeight,
-              child: Image.asset(
-                'images/Eleonore_Shop.png',
-                fit: BoxFit.contain,
+    return SizedBox(
+      width: baseWidth,
+      height: baseHeight,
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: SizedBox(
+          width: artW,
+          height: artH,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: Image.asset(
+                  'images/shop/Book_Shop_Nogrid.png',
+                  fit: BoxFit.fill,
+                ),
               ),
-            ),
-            SizedBox(
-              width: bookWidth,
-              height: bookHeight,
-              child: Stack(
-                children: [
-                  // Book background
-                  Positioned.fill(
+              Positioned(
+                top: 12,
+                right: 12,
+                child: GestureDetector(
+                  onTap: widget.onClose,
+                  child: SizedBox(
+                    width: 36,
+                    height: 36,
                     child: Image.asset(
-                      'images/Book_Shop.png',
+                      'images/X_Button.png',
                       fit: BoxFit.contain,
                     ),
                   ),
-                  // Close button (top right)
+                ),
+              ),
+              // Build both pages' grids
+              ..._buildPageGrid(leftPage, rowsPerPage, colsPerPage, items, 0),
+              ..._buildPageGrid(
+                rightPage,
+                rowsPerPage,
+                colsPerPage,
+                items,
+                rowsPerPage * colsPerPage,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildPageGrid(
+    Rect pageRectPct,
+    int rows,
+    int cols,
+    List<GameItem> items,
+    int startIndex,
+  ) {
+    return [
+      Positioned.fill(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final double w = constraints.maxWidth;
+            final double h = constraints.maxHeight;
+            final double x = pageRectPct.left * w;
+            final double y = pageRectPct.top * h;
+            final double pageW = pageRectPct.width * w;
+            final double pageH = pageRectPct.height * h;
+            const double spacingPx = 10.0; // 2px gap between slots
+            final double cellWidth = (pageW - spacingPx * (cols - 1)) / cols;
+            final double cellHeight = (pageH - spacingPx * (rows - 1)) / rows;
+            final double cell = cellWidth < cellHeight ? cellWidth : cellHeight;
+            final double totalW = cell * cols + spacingPx * (cols - 1);
+            final double totalH = cell * rows + spacingPx * (rows - 1);
+            final double startX = x + (pageW - totalW) / 2;
+            final double startY = y + (pageH - totalH) / 2;
+
+            final List<Widget> children = [];
+            int idx = startIndex;
+            for (int r = 0; r < rows; r++) {
+              for (int c = 0; c < cols; c++) {
+                final item = idx < items.length ? items[idx] : null;
+                final double cx = startX + c * (cell + spacingPx) + 5;
+                final double cy = startY + r * (cell + spacingPx) - 45;
+                const double shrink = 1.0; // make slot smaller by 2px
+                final double renderSize = (cell + 5) - shrink;
+                children.add(
                   Positioned(
-                    top: 12,
-                    right: 12,
+                    left: cx + shrink / 2,
+                    top: cy + shrink / 2,
                     child: GestureDetector(
-                      onTap: widget.onClose,
+                      onTap: item != null ? () => _buy(item) : null,
                       child: SizedBox(
-                        width: 36,
-                        height: 36,
-                        child: Image.asset(
-                          'images/X_Button.png',
-                          fit: BoxFit.contain,
+                        width: renderSize,
+                        height: renderSize,
+                        child: Stack(
+                          children: [
+                            Positioned.fill(
+                              child: Image.asset(
+                                'images/Slot.png',
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                            if (item != null)
+                              Positioned.fill(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      item.icon,
+                                      size: renderSize * 0.5,
+                                      color: Colors.white,
+                                    ),
+                                    const SizedBox(height: 1),
+                                    Text(
+                                      item.name,
+                                      style: TextStyle(
+                                        fontSize: renderSize * 0.22,
+                                        color: Colors.white,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     ),
                   ),
-                  // Overlay slots
-                  for (int i = 0; i < slotPositions.length; i++)
-                    Positioned(
-                      left: slotPositions[i].dx,
-                      top: slotPositions[i].dy,
-                      child: Builder(
-                        builder: (context) {
-                          final item = i < npcItems.length ? npcItems[i] : null;
-                          return GestureDetector(
-                            onTap: item != null ? () => _buy(item) : null,
-                            child: Container(
-                              width: slotSize,
-                              height: slotSize,
-                              decoration: BoxDecoration(
-                                color: Colors.transparent,
-                                border: Border.all(
-                                  color: Colors.brown.shade700,
-                                  width: 2,
-                                ),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: item == null
-                                  ? const SizedBox.shrink()
-                                  : Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          item.icon,
-                                          size: 22,
-                                          color: Colors.black87,
-                                        ),
-                                        const SizedBox(height: 1),
-                                        Text(
-                                          item.name,
-                                          style: const TextStyle(
-                                            fontSize: 8,
-                                            color: Colors.black87,
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
-                                    ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                ],
+                );
+                idx++;
+              }
+            }
+            return Stack(children: children);
+          },
+        ),
+      ),
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Fix the panel to the art aspect; use default width for Book_Shop_Nogrid.
+    const double bookArtW = 946;
+    const double bookArtH = 582;
+    return Center(
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: SizedBox(
+          width: bookArtW + 600,
+          height: bookArtH,
+          child: Row(
+            children: [
+              Transform.translate(
+                offset: kEleonoreOffset,
+                child: _buildEleonoreImage(bookArtH),
               ),
-            ),
-          ],
+              const Spacer(),
+              Transform.translate(
+                offset: kBookOffset,
+                child: _buildBookPanel(bookArtW, bookArtH, npcItems),
+              ),
+            ],
+          ),
         ),
       ),
     );
