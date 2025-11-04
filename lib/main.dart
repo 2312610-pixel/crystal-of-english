@@ -12,7 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mygame/components/Menu/flashcard/business/Flashcard.dart';
 import 'package:mygame/components/Menu/flashcard/business/Deck.dart';
-import 'package:mygame/components/Menu/flashcard/screen/cardlevel/cardlevelscreen.dart';
+import 'package:mygame/vocab/screen/cardlevel/cardlevelscreen.dart';
 import 'package:mygame/components/Menu/pausemenu.dart';
 import 'package:provider/provider.dart';
 import 'ui/health.dart';
@@ -89,7 +89,11 @@ void main() async {
                 child: SafeArea(
                   child: Scaffold(
                     backgroundColor: Colors.white,
+                    extendBodyBehindAppBar: true,
                     appBar: AppBar(
+                      backgroundColor:
+                          Colors.transparent, 
+                      elevation: 0,
                       title: const Text('Flashcards'),
                       leading: IconButton(
                         icon: const Icon(Icons.close),
@@ -294,7 +298,10 @@ class MyGame extends FlameGame
           ),
           DialogueChoice('Not Right Now', onSelected: dialogManager.close),
         ],
-        idleLines: const ['You know nothing, Jon Snow', 'Why Would A Girl See Blood And Collapse?'],
+        idleLines: const [
+          'You know nothing, Jon Snow',
+          'Why Would A Girl See Blood And Collapse?',
+        ],
         enableIdleChatter: true,
         spriteAsset: 'chihiro.png',
         srcPosition: Vector2(0, 0),
@@ -303,7 +310,8 @@ class MyGame extends FlameGame
         avatarAsset: 'assets/images/Eleonore_avatar.png',
         avatarDisplaySize: const Size(162, 162),
         interactRadius: 28,
-        zPriority: 20,);
+        zPriority: 20,
+      );
       await world.add(wisemanNPC);
 
       final npc1 = Npc(
@@ -389,10 +397,9 @@ class MyGame extends FlameGame
         avatarAsset: 'assets/images/Eleonore_avatar.png',
         avatarDisplaySize: const Size(162, 162),
         interactRadius: 28,
-        zPriority: 20,);
+        zPriority: 20,
+      );
       await world.add(shopNpc);
-
-
 
       await world.add(
         EnemyWander(
@@ -442,8 +449,7 @@ class MyGame extends FlameGame
           enemyType: EnemyType.boss,
         ),
       );
-    }
-    else if (mapFile == 'dungeon.tmx') {
+    } else if (mapFile == 'dungeon.tmx') {
       await world.add(
         Enemy(
           patrolRect: ui.Rect.fromLTWH(970, 465, 80, 60),
@@ -498,7 +504,7 @@ class MyGame extends FlameGame
       );
     }
   }
-  
+
   Future<void> enterBattle({required EnemyType enemyType}) async {
     if (_inBattle) return;
     _inBattle = true;
@@ -552,6 +558,9 @@ class MyGame extends FlameGame
       // if (result.goldGained > 0) { goldHud.addGold(result.goldGained); }
 
 
+      if (result.goldGained > 0) {
+        goldHud.addGold(result.goldGained);
+      }
     }
 
     if (joystick != null) {
@@ -709,7 +718,3 @@ class MyGame extends FlameGame
     }
   }
 }
-
-
-
-
